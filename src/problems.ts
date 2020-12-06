@@ -120,9 +120,7 @@ export const p5a = () => {
   let max = 0
 
   for (const seat of seats) {
-    const row = parseInt(seat.substring(0, 7).replace(/B/g, '1').replace(/F/g, '0'), 2)
-    const col = parseInt(seat.substring(7, 10).replace(/R/g, '1').replace(/L/g, '0'), 2)
-    const id = row * 8 + col
+    const id = parseInt(seat.replace(/B|R/g, '1').replace(/F|L/g, '0'), 2)
     max = id > max ? id : max
   }
 
@@ -134,11 +132,8 @@ export const p5b = () => {
 
   const ids = []
 
-  for (const seat of seats) {
-    const row = parseInt(seat.substring(0, 7).replace(/B/g, '1').replace(/F/g, '0'), 2)
-    const col = parseInt(seat.substring(7, 10).replace(/R/g, '1').replace(/L/g, '0'), 2)
-    ids.push(row * 8 + col)
-  }
+  for (const seat of seats)
+    ids.push(parseInt(seat.replace(/B|R/g, '1').replace(/F|L/g, '0'), 2))
 
   const sorted = ids.sort((a, b) => a - b)
 
