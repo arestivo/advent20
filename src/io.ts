@@ -7,6 +7,13 @@ export const readLines = (filename: string) => {
   return lines
 }
 
+export const readBatches = (filename: string) => {
+  const text = fs.readFileSync(`inputs/${filename}`,'utf8')
+  const batches = text.split('\n\n')
+
+  return batches.map(b => b.replace(/\n/g, ' '))
+}
+
 export const readIntegers = (filename: string) => {
   return readLines(filename).map(s => parseInt(s, 10))
 }
