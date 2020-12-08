@@ -169,3 +169,41 @@ export const p6b = () => {
 
   console.log(total)
 }
+
+export const p7a = () => {
+  const rules = io.readBagRules('7.in')
+  const found = new Set()
+
+  const toSearch = ['shiny gold']
+
+  while (toSearch.length > 0) {
+    const lookingFor = toSearch.pop()
+    for (const rule of rules ) {
+      if (rule.contents.some(c => c.bag === lookingFor && !found.has(rule.container))) {
+        found.add(rule.container)
+        toSearch.push(rule.container)
+      }
+    }
+  }
+
+  console.log(found.size)
+}
+
+export const p7b = () => {
+  const rules = io.readBagRules('7.in')
+  const toOpen = [ { qty: 1, bag: 'shiny gold' } ]
+
+  let total = 0
+
+  while (toOpen.length > 0) {
+    const opening = toOpen.pop()
+    total += opening.qty
+
+    const rule = rules.find(r => r.container === opening.bag)
+
+    if (rule !== undefined)
+      rule.contents.forEach(c => toOpen.push({ qty: opening.qty * c.qty, bag: c.bag }))
+  }
+
+  console.log(total - 1)
+}
