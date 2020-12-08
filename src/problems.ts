@@ -1,5 +1,6 @@
 import * as io from "./io"
 import * as util from "./include"
+import HGCv8 from "./hgcv8"
 
 export const runProblem = (problem: string) => {
   // tslint:disable-next-line: no-eval
@@ -206,4 +207,28 @@ export const p7b = () => {
   }
 
   console.log(total - 1)
+}
+
+export const p8a = () => {
+  const code = io.readLines('8.in')
+  const hgc = new HGCv8(code)
+
+  hgc.run()
+
+  console.log(hgc.acc)
+}
+
+export const p8b = () => {
+  const code = io.readLines('8.in')
+  const hgc = new HGCv8(code)
+
+  for (const line of hgc.code) {
+    hgc.reset()
+
+    line.op = line.op === 'jmp' ? 'nop' : (line.op === 'nop' ? 'jmp' : line.op)
+    const status = hgc.run()
+    line.op = line.op === 'jmp' ? 'nop' : (line.op === 'nop' ? 'jmp' : line.op)
+
+    if (status) console.log(hgc.acc)
+  }
 }
