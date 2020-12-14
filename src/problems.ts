@@ -396,5 +396,137 @@ export const p12b= () => {
   })
 
   console.log(Math.abs(pos[0]) + Math.abs(pos[1]))
-  console.log(wp, pos)
+}
+
+export const p13a= () => {
+  const [time, buses] = io.readLines('13.in').map(l => l.split(',').filter(b => b !== 'x').map(v => parseInt(v)))
+
+  let min = Number.MAX_SAFE_INTEGER
+  let selected = undefined
+
+  buses.forEach(bus => {
+    if (bus - time[0] % bus < min) {
+      min = bus - time[0] % bus
+      selected = bus
+    }
+  })
+
+  console.log(min * selected)
+}
+
+export const p13b = () => {
+  const [_, buses] = io.readLines('13.in').map(l => l.split(',').map((n, i)=>{return {i, n}}).filter(b => b.n !== 'x').map(b => { return { i: b.i, n: parseInt(b.n) } }))
+
+  const gcd = (a, b) => { if(b) return gcd(b, a % b); else return a; }
+  const lcm = (a, b) => a * b / gcd(a, b)
+  const nlcm = (x, y, a, b) => {
+    while (x !== y)
+      if (x < y) {x += a} else y += Math.ceil((x - y) / b) * b
+    return x
+  }
+
+  const find = (buses) => {
+    let current = buses[0].n
+    let delta = buses[0].n
+    for (let i = 1; i < buses.length; i++) {
+      current = nlcm(current, buses[i].n - (buses[i].i - buses[0].i), delta, buses[i].n)
+      delta = lcm(delta, buses[i].n)
+    }
+    return current
+  }
+
+  console.log(find(buses))
+}
+
+export const p14a = () => {
+  const lines = io.readLines('14.in')
+  const code = lines
+    .map(l => {
+      if (l.startsWith('mask')) {
+        const c = l.match(/[X01]+/)
+        return { i: 'mask', m: c[0] }
+      } else if (l.startsWith('mem')) {
+        const c = l.match(/mem\[(\d+)] = (\d+)/)
+        return { i: 'mem', p: parseInt(c[1]), v: c[2] }
+      }
+    })
+
+  const mem = new Map()
+  let mask = ''
+
+  code.forEach(c => {
+    switch (c.i) {
+      case 'mem':
+        const value = new Number(c.v).toString(2).split('')
+        const padded = Array(36 - value.length).fill('0').concat(value)
+        for (const [i, v] of padded.entries())
+          padded[i] = mask[i] == 'X' ? padded[i] : mask[i]
+        mem.set(c.p, padded)
+        break
+      case 'mask':
+        mask = c.m
+    }
+  })
+
+  let total = 0
+  for (const m of mem.values())
+    total += parseInt(m.join(''), 2)
+
+  console.log(total)
+}
+
+export const p14b = () => {
+  const lines = io.readLines('14.in')
+  const code = lines
+    .map(l => {
+      if (l.startsWith('mask')) {
+        const c = l.match(/[X01]+/)
+        return { i: 'mask', m: c[0] }
+      } else if (l.startsWith('mem')) {
+        const c = l.match(/mem\[(\d+)] = (\d+)/)
+        return { i: 'mem', p: parseInt(c[1]), v: c[2] }
+      }
+    })
+
+  const mem = new Map()
+  let mask = ''
+
+  const unmask = (padded, mask, i) => {
+    if (i >= padded.length) return [[]]
+
+    const addresses = []
+    const following = unmask(padded, mask, i + 1)
+
+    const values = []
+    switch(mask[i]) {
+      case '0': values.push(padded[i]); break
+      case '1': values.push('1'); break
+      case 'X': values.push('0'); values.push('1'); break
+    }
+
+    for (const v of values)
+      for (const f of following)
+        addresses.push([v].concat(f).join(''))
+
+    return addresses
+  }
+
+  code.forEach(c => {
+    switch (c.i) {
+      case 'mem':
+        const value = new Number(c.p).toString(2).split('')
+        const padded = Array(36 - value.length).fill('0').concat(value)
+        const addresses = unmask(padded, mask, 0).map(a => parseInt(a, 2))
+        for (const a of addresses) mem.set(a, parseInt(new Number(c.v).toString(2), 2))
+        break
+      case 'mask':
+        mask = c.m
+    }
+  })
+
+  let total = 0
+  for (const m of mem.values())
+    total += m
+
+  console.log(total)
 }
