@@ -417,15 +417,15 @@ export const p13a= () => {
 export const p13b = () => {
   const [_, buses] = io.readLines('13.in').map(l => l.split(',').map((n, i)=>{return {i, n}}).filter(b => b.n !== 'x').map(b => { return { i: b.i, n: parseInt(b.n) } }))
 
-  const gcd = (a, b) => { if(b) return gcd(b, a % b); else return a; }
-  const lcm = (a, b) => a * b / gcd(a, b)
-  const nlcm = (x, y, a, b) => {
+  const gcd = (a: number, b: number) => { if(b) return gcd(b, a % b); else return a; }
+  const lcm = (a: number, b: number) => a * b / gcd(a, b)
+  const nlcm = (x: number, y: number, a: number, b: number) => {
     while (x !== y)
       if (x < y) {x += a} else y += Math.ceil((x - y) / b) * b
     return x
   }
 
-  const find = (buses) => {
+  const find = (buses: {i: number, n: number}[]) => {
     let current = buses[0].n
     let delta = buses[0].n
     for (let i = 1; i < buses.length; i++) {
@@ -491,7 +491,7 @@ export const p14b = () => {
   const mem = new Map()
   let mask = ''
 
-  const unmask = (padded, mask, i) => {
+  const unmask = (padded: string | any[], mask: string, i: number) => {
     if (i >= padded.length) return [[]]
 
     const addresses = []
