@@ -484,29 +484,25 @@ export const p14b = () => {
         return { i: 'mask', m: c[0] }
       } else if (l.startsWith('mem')) {
         const c = l.match(/mem\[(\d+)] = (\d+)/)
-        return { i: 'mem', p: parseInt(c[1]), v: c[2] }
+        return { i: 'mem', p: c[1], v: c[2] }
       }
     })
 
   const mem = new Map()
-  let mask = ''
+  let mask = []
 
-  const unmask = (padded: string | any[], mask: string, i: number) => {
-    if (i >= padded.length) return [[]]
+  const unmask = (padded: string[], mask: string[]) => {
+    let addresses = [padded.map((n, i) => mask[i] === '1' ? '1' : n)]
+    
+    let i = -1
 
-    const addresses = []
-    const following = unmask(padded, mask, i + 1)
-
-    const values = []
-    switch(mask[i]) {
-      case '0': values.push(padded[i]); break
-      case '1': values.push('1'); break
-      case 'X': values.push('0'); values.push('1'); break
+    while((i = mask.indexOf('X', ++i)) !== -1) {
+      addresses = addresses.reduce((na: string[][], a) => {
+        na.push(a.map((v, p) => p === i ? '0' : v))
+        na.push(a.map((v, p) => p === i ? '1' : v))
+        return na
+      }, [])
     }
-
-    for (const v of values)
-      for (const f of following)
-        addresses.push([v].concat(f).join(''))
 
     return addresses
   }
@@ -514,13 +510,13 @@ export const p14b = () => {
   code.forEach(c => {
     switch (c.i) {
       case 'mem':
-        const value = new Number(c.p).toString(2).split('')
-        const padded = Array(36 - value.length).fill('0').concat(value)
-        const addresses = unmask(padded, mask, 0).map(a => parseInt(a, 2))
-        for (const a of addresses) mem.set(a, parseInt(new Number(c.v).toString(2), 2))
+        const address = new Number(c.p).toString(2).split('')
+        const padded = Array(36 - address.length).fill('0').concat(address)
+        const addresses = unmask(padded, mask)
+        for (const a of addresses) mem.set(a.join(''), parseInt(new Number(c.v).toString(2), 2))
         break
       case 'mask':
-        mask = c.m
+        mask = c.m.split('')
     }
   })
 
