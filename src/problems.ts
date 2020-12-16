@@ -526,3 +526,70 @@ export const p14b = () => {
 
   console.log(total)
 }
+
+export const p15a = (until = 2020) => {
+  const numbers = io.readCSInteger('15.in')
+
+  let turn = 0
+  let number = numbers[numbers.length - 1]
+
+  const lastTime = new Map()
+  numbers.forEach(n => lastTime.set(n, [++turn]))
+
+  while (turn++ !== until) {
+    const when = lastTime.get(number) === undefined ? [] : lastTime.get(number)
+    const spoken = when.length < 2 ? 0 : when[when.length - 1] - when[when.length - 2]
+    const update = lastTime.get(spoken) === undefined ? [] : lastTime.get(spoken)
+
+    update.push(turn)
+    lastTime.set(spoken, update)
+    number = spoken
+  }
+
+  console.log(number)
+}
+
+export const p15b = () => {
+  p15a(30000000)
+}
+
+export const p16a = () => {
+  const tickets = io.readTickets('16.in')
+
+  const isValid = (v: number) => 
+    tickets.classes.some(c => c.rules.some(r => v >= r.from && v <= r.to))
+  const rate = 
+    tickets.nearby.reduce((r, t) => r + t.reduce((r, v) => r + (!isValid(v) ? v : 0), 0), 0)
+
+  console.log(rate)
+}
+
+export const p16b = () => {
+  const tickets = io.readTickets('16.in')
+
+  const isValid = (v: number) => tickets.classes.some(c => c.rules.some(r => v >= r.from && v <= r.to))
+  const possibleClasses = (v) => tickets.classes.filter(c => c.rules.some(r => v >= r.from && v <= r.to)).map(c => c.name)
+
+  const valid = tickets.nearby.filter(t => t.every(n => isValid(n)))
+  const remaining = valid[0].map(_ => tickets.classes.map(t => t.name))
+
+  valid.forEach(t => t.forEach(
+    (v, i) => remaining[i] = remaining[i].filter(r => new Set(possibleClasses(v)).has(r))
+  ))
+
+  while (remaining.some(r => r.length !== 1))
+    remaining.forEach((r1, i1) => {
+      if (r1.length === 1) {
+        remaining.forEach((r2, i2) => {
+          if (i1 !== i2) remaining[i2] = r2.filter(r => r !== r1[0])
+        })
+      }
+    })
+
+  console.log(
+    remaining
+      .map(r => r[0])
+      .reduce((total, r, i) => total *= r.startsWith('departure') ? tickets.ticket[i] : 1, 1)
+  )
+}
+

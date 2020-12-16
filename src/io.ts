@@ -14,8 +14,20 @@ export const readBatches = (filename: string) => {
   return batches.map(b => b.replace(/\n/g, ' '))
 }
 
+export const readChunks = (filename: string) => {
+  const text = fs.readFileSync(`inputs/${filename}`,'utf8')
+  const batches = text.split('\n\n')
+
+  return batches.map(b => b.split('\n'))
+}
+
 export const readIntegers = (filename: string) => {
   return readLines(filename).map(s => parseInt(s, 10))
+}
+
+export const readCSInteger = (filename: string) => {
+  const text = fs.readFileSync(`inputs/${filename}`,'utf8')
+  return  text.split(',').map(v => parseInt(v, 10))
 }
 
 export const readPasswords = (filename: string) => {
@@ -32,4 +44,15 @@ export const readBagRules = (filename: string) => {
     }).filter(c => c.qty !== null).map(c => { return { qty: parseInt(c.qty.toString(), 10), bag: c.bag } } )
     return { container, contents }
   }).filter(r => r.contents.length > 0)
+}
+
+export const readTickets = (filename: string) => {
+  const chunks = readChunks(filename)
+  const classes = chunks[0]
+    .map(c => c.match(/([\w ]+): (\d+-\d+) or (\d+-\d+)/))
+    .map(c => {return {name: c[1], rules: [c[2].split('-'), c[3].split('-')]}})
+    .map(c => {return {name: c.name, rules: c.rules.map(r => {return{from: parseInt(r[0], 10), to: parseInt(r[1], 10)}})}})
+  const ticket = chunks[1][1].split(',').map(v => parseInt(v, 10))
+  const nearby = chunks[2].slice(1).map(t => t.split(',').map(v => parseInt(v, 10)))
+  return {classes, ticket, nearby}
 }
