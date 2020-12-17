@@ -3,16 +3,17 @@ import * as util from "./include"
 import HGCv8 from "./hgcv8"
 
 export const runProblem = (problem: string) => {
-  let f = undefined
+  let f: () => void
 
   try {
     // tslint:disable-next-line: no-eval
     if (typeof eval(`p${problem}`) === 'function')
+      // tslint:disable-next-line: no-eval
       f = eval(`p${problem}`)
-  } catch { }
-
-  if (f !== undefined) f()
-  else console.log('No such problem!')
+  } finally {
+    if (f !== undefined) f()
+    else console.log('No such problem!')
+  }
 }
 
 export const p1a = () => {
@@ -259,7 +260,7 @@ export const p10a = () => {
     last = a
   }
 
-  console.log(count1 * (count3 + 1))  
+  console.log(count1 * (count3 + 1))
 }
 
 export const p10b= () => {
@@ -289,15 +290,15 @@ export const p10b= () => {
 export const p11a= () => {
     const seats = io.readLines('11.in').map(r => r.split(''))
 
-    const adjacent = (seats: string[][], r: number, c: number) =>
+    const adjacent = (s: string[][], r: number, c: number) =>
       util.directions.map(d => [r + d[0], c + d[1]])
-        .filter(a => seats[a[0]] !== undefined)
-        .filter(a => seats[a[0]][a[1]] !== undefined)
-        .map(a => seats[a[0]][a[1]])
+        .filter(a => s[a[0]] !== undefined)
+        .filter(a => s[a[0]][a[1]] !== undefined)
+        .map(a => s[a[0]][a[1]])
 
     while (true) {
       const changed = []
-      
+
       for (const [r, row] of seats.entries())
         for (const [c, seat] of row.entries()) {
           if (seat === 'L' && adjacent(seats, r, c).every(a => a !== '#'))
@@ -316,19 +317,19 @@ export const p11a= () => {
 export const p11b= () => {
   const seats = io.readLines('11.in').map(r => r.split(''))
 
-  const find = (seats: string[][], r:number, c:number, d: number[]) => {
+  const find = (s: string[][], r:number, c:number, d: number[]) => {
     while (true) {
       r += d[0]; c += d[1]
-      if (seats[r] === undefined || seats[r][c] === undefined) return 
-      if (seats[r][c] !== '.') return seats[r][c]
+      if (s[r] === undefined || s[r][c] === undefined) return
+      if (s[r][c] !== '.') return s[r][c]
     }
   }
 
-  const adjacent = (seats: string[][], r: number, c: number) => util.directions.map(d => find(seats, r, c, d))
+  const adjacent = (s: string[][], r: number, c: number) => util.directions.map(d => find(s, r, c, d))
 
   while (true) {
     const changed = []
-    
+
     for (const [r, row] of seats.entries())
       for (const [c, seat] of row.entries()) {
         if (seat === 'L' && adjacent(seats, r, c).every(a => a !== '#')) changed.push({r, c, t: '#'})
@@ -344,8 +345,8 @@ export const p11b= () => {
 
 export const p12a= () => {
   const actions = io.readLines('12.in').map(l => l.match(/(\w)(\d+)/)).map(g => { return { a: g[1], v: parseInt(g[2], 10) } })
- 
-  let pos = [0, 0]
+
+  const pos = [0, 0]
   let dir = 'E'
 
   const goL = new Map([['E', 'N'], ['N', 'W'], ['W', 'S'], ['S', 'E']])
@@ -358,12 +359,12 @@ export const p12a= () => {
 
   const delta = new Map([['E', [1, 0]], ['N', [0, -1]], ['W', [-1, 0]], ['S', [0, 1]]])
 
-  actions.forEach(a => { 
+  actions.forEach(a => {
     switch(a.a) {
       case 'L': dir = rotateL.get(a.v).get(dir); break;
       case 'R': dir = rotateR.get(a.v).get(dir); break;
-      case 'F': let d1 = delta.get(dir); if (d1 !== undefined) { pos[0]+= d1[0] * a.v; pos[1]+= d1[1] * a.v }; break;
-      default: let d2 = delta.get(a.a); if (d2 !== undefined) { pos[0]+= d2[0] * a.v; pos[1]+= d2[1] * a.v }; break;
+      case 'F': const d1 = delta.get(dir); if (d1 !== undefined) { pos[0]+= d1[0] * a.v; pos[1]+= d1[1] * a.v }; break;
+      default: const d2 = delta.get(a.a); if (d2 !== undefined) { pos[0]+= d2[0] * a.v; pos[1]+= d2[1] * a.v }; break;
     }
   })
 
@@ -373,25 +374,25 @@ export const p12a= () => {
 export const p12b= () => {
   const actions = io.readLines('12.in').map(l => l.match(/(\w)(\d+)/)).map(g => { return { a: g[1], v: parseInt(g[2], 10) } })
 
-  let pos = [0, 0]
-  let wp = [10, -1]
+  const pos = [0, 0]
+  let cwp = [10, -1]
 
-  const goL = (wp: number[]) => [wp[1], -wp[0]] 
-  const goR = (wp: number[]) => [-wp[1], wp[0]] 
-  const goB = (wp: number[]) => [-wp[0], -wp[1]] 
-  const goF = (wp: number[]) => [wp[0], wp[1]] 
+  const goL = (wp: number[]) => [wp[1], -wp[0]]
+  const goR = (wp: number[]) => [-wp[1], wp[0]]
+  const goB = (wp: number[]) => [-wp[0], -wp[1]]
+  const goF = (wp: number[]) => [wp[0], wp[1]]
 
   const rotateL = new Map([[0, goF], [90, goL], [180, goB], [270, goR], [360, goF]])
   const rotateR = new Map([[0, goF], [90, goR], [180, goB], [270, goL], [360, goF]])
 
   const delta = new Map([['E', [1, 0]], ['N', [0, -1]], ['W', [-1, 0]], ['S', [0, 1]]])
 
-  actions.forEach(a => { 
+  actions.forEach(a => {
     switch(a.a) {
-      case 'L': wp = rotateL.get(a.v)(wp); break;
-      case 'R': wp = rotateR.get(a.v)(wp); break;
-      case 'F': pos[0]+= wp[0]*a.v; pos[1]+= wp[1]*a.v; break;
-      default: let d = delta.get(a.a); if (d !== undefined) { wp[0]+= d[0]*a.v; wp[1]+= d[1]*a.v }; break;
+      case 'L': cwp = rotateL.get(a.v)(cwp); break;
+      case 'R': cwp = rotateR.get(a.v)(cwp); break;
+      case 'F': pos[0]+= cwp[0]*a.v; pos[1]+= cwp[1]*a.v; break;
+      default: const d = delta.get(a.a); if (d !== undefined) { cwp[0]+= d[0]*a.v; cwp[1]+= d[1]*a.v }; break;
     }
   })
 
@@ -399,10 +400,10 @@ export const p12b= () => {
 }
 
 export const p13a= () => {
-  const [time, buses] = io.readLines('13.in').map(l => l.split(',').filter(b => b !== 'x').map(v => parseInt(v)))
+  const [time, buses] = io.readLines('13.in').map(l => l.split(',').filter(b => b !== 'x').map(v => parseInt(v, 10)))
 
   let min = Number.MAX_SAFE_INTEGER
-  let selected = undefined
+  let selected: number
 
   buses.forEach(bus => {
     if (bus - time[0] % bus < min) {
@@ -415,7 +416,7 @@ export const p13a= () => {
 }
 
 export const p13b = () => {
-  const [_, buses] = io.readLines('13.in').map(l => l.split(',').map((n, i)=>{return {i, n}}).filter(b => b.n !== 'x').map(b => { return { i: b.i, n: parseInt(b.n) } }))
+  const [_, buses] = io.readLines('13.in').map(l => l.split(',').map((n, i)=>{return {i, n}}).filter(b => b.n !== 'x').map(b => { return { i: b.i, n: parseInt(b.n, 10) } }))
 
   const gcd = (a: number, b: number) => { if(b) return gcd(b, a % b); else return a; }
   const lcm = (a: number, b: number) => a * b / gcd(a, b)
@@ -425,12 +426,12 @@ export const p13b = () => {
     return x
   }
 
-  const find = (buses: {i: number, n: number}[]) => {
-    let current = buses[0].n
-    let delta = buses[0].n
-    for (let i = 1; i < buses.length; i++) {
-      current = nlcm(current, buses[i].n - (buses[i].i - buses[0].i), delta, buses[i].n)
-      delta = lcm(delta, buses[i].n)
+  const find = (b: {i: number, n: number}[]) => {
+    let current = b[0].n
+    let delta = b[0].n
+    for (let i = 1; i < b.length; i++) {
+      current = nlcm(current, b[i].n - (b[i].i - b[0].i), delta, b[i].n)
+      delta = lcm(delta, b[i].n)
     }
     return current
   }
@@ -447,7 +448,7 @@ export const p14a = () => {
         return { i: 'mask', m: c[0] }
       } else if (l.startsWith('mem')) {
         const c = l.match(/mem\[(\d+)] = (\d+)/)
-        return { i: 'mem', p: parseInt(c[1]), v: c[2] }
+        return { i: 'mem', p: parseInt(c[1], 10), v: c[2] }
       }
     })
 
@@ -457,10 +458,11 @@ export const p14a = () => {
   code.forEach(c => {
     switch (c.i) {
       case 'mem':
+        // tslint:disable-next-line: no-construct
         const value = new Number(c.v).toString(2).split('')
         const padded = Array(36 - value.length).fill('0').concat(value)
         for (const [i, v] of padded.entries())
-          padded[i] = mask[i] == 'X' ? padded[i] : mask[i]
+          padded[i] = mask[i] === 'X' ? padded[i] : mask[i]
         mem.set(c.p, padded)
         break
       case 'mask':
@@ -491,12 +493,13 @@ export const p14b = () => {
   const mem = new Map()
   let mask = []
 
-  const unmask = (padded: string[], mask: string[]) => {
-    let addresses = [padded.map((n, i) => mask[i] === '1' ? '1' : n)]
-    
+  const unmask = (padded: string[], m: string[]) => {
+    let addresses = [padded.map((n, idx) => m[idx] === '1' ? '1' : n)]
+
     let i = -1
 
-    while((i = mask.indexOf('X', ++i)) !== -1) {
+    // tslint:disable-next-line: no-conditional-assignment
+    while((i = m.indexOf('X', ++i)) !== -1) {
       addresses = addresses.reduce((na: string[][], a) => {
         na.push(a.map((v, p) => p === i ? '0' : v))
         na.push(a.map((v, p) => p === i ? '1' : v))
@@ -510,9 +513,11 @@ export const p14b = () => {
   code.forEach(c => {
     switch (c.i) {
       case 'mem':
+        // tslint:disable-next-line: no-construct
         const address = new Number(c.p).toString(2).split('')
         const padded = Array(36 - address.length).fill('0').concat(address)
         const addresses = unmask(padded, mask)
+        // tslint:disable-next-line: no-construct
         for (const a of addresses) mem.set(a.join(''), parseInt(new Number(c.v).toString(2), 2))
         break
       case 'mask':
@@ -531,22 +536,22 @@ export const p15a = (until = 2020) => {
   const numbers = io.readCSInteger('15.in')
 
   let turn = 0
-  let number = numbers[numbers.length - 1]
+  let num = numbers[numbers.length - 1]
 
   const lastTime = new Map()
   numbers.forEach(n => lastTime.set(n, [++turn]))
 
   while (turn++ !== until) {
-    const when = lastTime.get(number) === undefined ? [] : lastTime.get(number)
+    const when = lastTime.get(num) === undefined ? [] : lastTime.get(num)
     const spoken = when.length < 2 ? 0 : when[when.length - 1] - when[when.length - 2]
     const update = lastTime.get(spoken) === undefined ? [] : lastTime.get(spoken)
 
     update.push(turn)
     lastTime.set(spoken, update)
-    number = spoken
+    num = spoken
   }
 
-  console.log(number)
+  console.log(num)
 }
 
 export const p15b = () => {
@@ -556,10 +561,10 @@ export const p15b = () => {
 export const p16a = () => {
   const tickets = io.readTickets('16.in')
 
-  const isValid = (v: number) => 
+  const isValid = (v: number) =>
     tickets.classes.some(c => c.rules.some(r => v >= r.from && v <= r.to))
-  const rate = 
-    tickets.nearby.reduce((r, t) => r + t.reduce((r, v) => r + (!isValid(v) ? v : 0), 0), 0)
+  const rate =
+    tickets.nearby.reduce((r1, t) => r1 + t.reduce((r2, v) => r2 + (!isValid(v) ? v : 0), 0), 0)
 
   console.log(rate)
 }
@@ -592,4 +597,3 @@ export const p16b = () => {
       .reduce((total, r, i) => total *= r.startsWith('departure') ? tickets.ticket[i] : 1, 1)
   )
 }
-
