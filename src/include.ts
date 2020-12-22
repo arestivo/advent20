@@ -47,6 +47,15 @@ export const findContiguousSum = (sum: number, numbers: number[]) => {
   }
 }
 
-export const directions = [[-1, -1], [-1, 0], [-1, 1], 
-                           [ 0, -1],          [ 0, 1], 
+export const directions = [[-1, -1], [-1, 0], [-1, 1],
+                           [ 0, -1],          [ 0, 1],
                            [ 1, -1], [ 1, 0], [ 1, 1]]
+
+export const neighbours = (dim: number) => {
+  return _neighbours(dim).filter(n => n.some(c => c !== 0))
+}
+
+const _neighbours = (dim: number): number[][] => {
+  if (dim === 0) return [[]]
+  return _neighbours(dim - 1).map(n => [-1, 0, 1].map(c => n.concat([c]))).flat()
+}

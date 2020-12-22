@@ -1,6 +1,9 @@
 import * as io from "./io"
 import * as util from "./include"
 import HGCv8 from "./hgcv8"
+import { callbackify } from "util"
+import { userInfo } from "os"
+import { create } from "domain"
 
 export const runProblem = (problem: string) => {
   let f: () => void
@@ -595,5 +598,377 @@ export const p16b = () => {
     remaining
       .map(r => r[0])
       .reduce((total, r, i) => total *= r.startsWith('departure') ? tickets.ticket[i] : 1, 1)
+  )
+}
+
+export const p17a = (dim = 3) => {
+  const slice = io.readLines('17.in').map(s => s.split(''))
+  const cubes = new Map<string, {x: number, y: number, z: number}>()
+
+  slice.forEach((row, x) => row.forEach((cube, y) => {if (cube === '#') cubes.set(JSON.stringify({x, y, z: 0}), {x, y, z: 0})}))
+
+  for (let i = 0; i < 6; i++) {
+    const toAdd = new Set<{x: number, y: number, z: number}>()
+    const toRemove = [...cubes.values()].map(c => ({c, n: util.neighbours(3)
+      .map(n => ({x: c.x + n[0], y: c.y + n[1], z: c.z + n[2]}))
+      .filter(n => cubes.has(JSON.stringify(n))).length})
+    ).filter(c => c.n !==2 && c.n !== 3 ).map(c => c.c)
+
+    const xs = [...cubes.values()].map(c => c.x)
+    const ys = [...cubes.values()].map(c => c.y)
+    const zs = [...cubes.values()].map(c => c.z)
+
+    for (let x = Math.min(...xs) - 1; x <= Math.max(...xs) + 1; x++) {
+      for (let y = Math.min(...ys) - 1; y <= Math.max(...ys) + 1; y++) {
+        for (let z = Math.min(...zs) - 1; z <= Math.max(...zs) + 1; z++) {
+          const nc = util.neighbours(3)
+            .map(n => ({x: x + n[0], y: y + n[1], z: z + n[2]}))
+            .filter(n => cubes.has(JSON.stringify(n)))
+          if (nc.length === 3) toAdd.add({x, y, z})
+        }
+      }
+    }
+
+    toRemove.forEach(r => cubes.delete(JSON.stringify(r)))
+    toAdd.forEach(r => cubes.set(JSON.stringify(r), r))
+  }
+  console.log(cubes.size)
+}
+
+export const p17b = () => {
+  const slice = io.readLines('17.in').map(s => s.split(''))
+  const cubes = new Map<string, {x: number, y: number, z: number, w: number}>()
+
+  slice.forEach((row, x) => row.forEach((cube, y) => {
+    if (cube === '#') cubes.set(JSON.stringify({x, y, z: 0, w: 0}), {x, y, z: 0, w: 0})
+  }))
+
+  for (let i = 0; i < 6; i++) {
+    const toAdd = new Set<{x: number, y: number, z: number, w: number}>()
+    const toRemove = [...cubes.values()].map(c => ({c, n: util.neighbours(4)
+      .map(n => ({x: c.x + n[0], y: c.y + n[1], z: c.z + n[2], w: c.w + n[3]}))
+      .filter(n => cubes.has(JSON.stringify(n))).length})
+    ).filter(c => c.n !==2 && c.n !== 3 ).map(c => c.c)
+
+    const xs = [...cubes.values()].map(c => c.x)
+    const ys = [...cubes.values()].map(c => c.y)
+    const zs = [...cubes.values()].map(c => c.z)
+    const ws = [...cubes.values()].map(c => c.w)
+
+    for (let x = Math.min(...xs) - 1; x <= Math.max(...xs) + 1; x++)
+      for (let y = Math.min(...ys) - 1; y <= Math.max(...ys) + 1; y++)
+        for (let z = Math.min(...zs) - 1; z <= Math.max(...zs) + 1; z++)
+          for (let w = Math.min(...ws) - 1; w <= Math.max(...ws) + 1; w++)
+            if (util.neighbours(4)
+                  .map(n => ({x: x + n[0], y: y + n[1], z: z + n[2], w: w + n[3]}))
+                  .filter(n => cubes.has(JSON.stringify(n))).length === 3) toAdd.add({x, y, z, w})
+
+    toRemove.forEach(r => cubes.delete(JSON.stringify(r)))
+    toAdd.forEach(r => cubes.set(JSON.stringify(r), r))
+  }
+  console.log(cubes.size)
+}
+
+export const p18a = () => {
+  const expressions = io.readLines('18.in')
+
+  const calc = (e: string) => {
+    const values = e.match(/\d+/g).map(v => parseInt(v, 10))
+    const ops = e.match(/[+\-*/]/g)
+    let total = values[0]
+    for (let i = 1; i < values.length; i++) {
+      if (ops[i - 1] === '+') total += values[i]
+      if (ops[i - 1] === '*') total *= values[i]
+    }
+    return total
+  }
+
+  const simplify = (e: string) => {
+    const [part, inside] = e.match(/\(([^()]+)\)/)
+    const value = calc(inside)
+    return e.replace(part, value.toString())
+  }
+
+  let total = 0
+  expressions.forEach(e => {
+    while (e.indexOf('(') !== -1) e = simplify(e)
+    total += calc(e)
+  })
+
+  console.log(total)
+}
+
+export const p18b = () => {
+  const expressions = io.readLines('18.in')
+
+  const mul = (e: string) => {
+    const part = e.match(/\d+ \* \d+/)[0]
+    const values = part.match(/\d+/g)
+    const value = parseInt(values[0], 10) * parseInt(values[1], 10)
+    return e.replace(part, value.toString())
+  }
+
+
+  const sum = (e: string) => {
+    const part = e.match(/\d+ \+ \d+/)[0]
+    const values = part.match(/\d+/g)
+    const value = parseInt(values[0], 10) + parseInt(values[1], 10)
+    return e.replace(part, value.toString())
+  }
+
+  const calc = (e: string) => {
+    while (e.indexOf('+') !== -1) e = sum(e)
+    while (e.indexOf('*') !== -1) e = mul(e)
+    return parseInt(e, 10)
+  }
+
+  const simplify = (e: string) => {
+    const [part, inside] = e.match(/\(([^()]+)\)/)
+    const value = calc(inside)
+    return e.replace(part, value.toString())
+  }
+
+  let total = 0
+  expressions.forEach(e => {
+    while (e.indexOf('(') !== -1) e = simplify(e)
+    total += calc(e)
+  })
+
+  console.log(total)
+}
+
+export const p19a = () => {
+  const [ruleParts, messages] = io.readChunks('19.in')
+
+  const rules = new Map()
+  ruleParts.forEach(p => {
+    const sides = p.split(':')
+    rules.set(sides[0].trim(), sides[1].trim())
+  })
+
+  const createRegex = (rule: string) => {
+    if (rule.indexOf('|') !== -1)
+      return `(${rule.split('|').map(p => createRegex(p.trim())).join('|')})`
+
+    if (rule.indexOf('"') !== -1)
+      return rule.match(/"(.+)"/)[1]
+
+    return rule.split(' ').map(p => createRegex(rules.get(p))).join('')
+  }
+
+  const regex = new RegExp(`^${createRegex(rules.get('0'))}$`)
+
+  let count = 0
+  for (const m of messages)
+    count += regex.test(m) ? 1 : 0
+  console.log(count)
+}
+
+export const p19b = () => {
+  const [ruleParts, messages] = io.readChunks('19.in')
+
+  const rules = new Map()
+  ruleParts.forEach(p => {
+    const sides = p.split(':')
+    rules.set(sides[0].trim(), sides[1].trim())
+  })
+
+  const createRegex = (rule: string) => {
+    if (rule.indexOf('|') !== -1)
+      return `(${rule.split('|').map(p => createRegex(p.trim())).join('|')})`
+
+    if (rule.indexOf('"') !== -1)
+      return rule.match(/"(.+)"/)[1]
+
+    return rule.split(' ').map(p => createRegex(rules.get(p))).join('')
+  }
+
+  rules.set('8', '42 | 42 42 | 42 42 42 | 42 42 42 42 | 42 42 42 42 42 | 42 42 42 42 42 42 | 42 42 42 42 42 42 42 | 42 42 42 42 42 42 42 42')
+  rules.set('11', '42 31 | 42 42 31 31 | 42 42 42 31 31 31 | 42 42 42 42 31 31 31 31 | 42 42 42 42 42 31 31 31 31 31 | 42 42 42 42 42 42 31 31 31 31 31 31')
+
+  const regex = new RegExp(`^${createRegex(rules.get('0'))}$`)
+
+  let count = 0
+  for (const m of messages)
+    count += regex.test(m) ? 1 : 0
+  console.log(count)
+}
+
+export const p20a = () => {
+  const tiles = io.readChunks('20.in').map(t => ({id: parseInt(t[0].match(/\d+/)[0], 10), data: t.slice(1).map(r => r.split('')), left: [], right: [], top: [], bottom: [] }))
+  const size = Math.sqrt(tiles.length)
+
+  const rotate = (m: string[][]) => m[0].map((v, i) => m.map(r => r[i]).reverse())
+  const flip = (m: string[][]) => [...m].reverse()
+  const rotateN = (m: string[][], n: number) => {
+    for (let i = 0; i < n % 4; i++) m = rotate(m)
+    if (n > 3) return flip(m)
+    return m
+  }
+
+  const checkLeft = (left: string[][], right: string[][]) => {
+    if (left === undefined) return true
+    for (let i = 0; i < left.length; i++)
+      if (left[i][left[i].length - 1] !== right[i][0]) return false
+    return true
+  }
+
+  const checkTop = (top: string[][], bottom: string[][]) => {
+    if (top === undefined) return true
+    for (let i = 0; i < top[top.length - 1].length; i++)
+      if (top[top.length - 1][i] !== bottom[0][i]) return false
+    return true
+  }
+
+  const fits = (filled: { idx: number, rot: number }[][], row: number, column: number, idx: number, rot: number) => {
+    const top = filled[row - 1] === undefined ? undefined : rotateN(tiles[filled[row - 1][column].idx].data, filled[row - 1][column].rot)
+    const left = filled[row][column - 1] === undefined ? undefined : rotateN(tiles[filled[row][column - 1].idx].data, filled[row][column - 1].rot)
+    const tile = rotateN(tiles[idx].data, rot)
+
+    return checkLeft(left, tile) && checkTop(top, tile)
+  }
+
+  const empty = []
+  for (let i = 0; i < size; i++) {
+    empty[i] = []
+      for (let j = 0; j < size; j++) empty[i][j] = undefined
+  }
+
+  for (const [i, t1] of tiles.entries())
+    for (const [j, t2] of tiles.entries())
+        for (let r = 0; r < 8; r++) {
+          if (i !== j && checkLeft(t1.data, rotateN(t2.data, r))) t1.right.push(t2.id)
+          if (i !== j && checkTop(t1.data, rotateN(t2.data, r))) t1.bottom.push(t2.id)
+          if (i !== j && checkLeft(rotateN(t2.data, r), t1.data)) t1.left.push(t2.id)
+          if (i !== j && checkTop(rotateN(t2.data, r), t1.data)) t1.top.push(t2.id)
+        }
+
+    const corners = tiles.filter(t => 
+      t.left.length === 0 && t.top.length === 0 ||
+      t.left.length === 0 && t.bottom.length === 0 ||
+      t.right.length === 0 && t.top.length === 0 ||
+      t.right.length === 0 && t.bottom.length === 0
+    )
+
+    console.log(corners.reduce((m, t) => m = m * t.id, 1))
+}
+
+export const p20b = () => {
+  const tiles = io.readChunks('20.in').map(t => ({id: parseInt(t[0].match(/\d+/)[0], 10), data: t.slice(1).map(r => r.split('')), left: [], right: [], top: [], bottom: [] }))
+  const size = Math.sqrt(tiles.length)
+  let image: string[][] = []
+
+  const rotate = (m: string[][]) => m[0].map((v, i) => m.map(r => r[i]).reverse())
+  const flip = (m: string[][]) => [...m].reverse()
+  const rotateN = (m: string[][], n: number) => {
+    for (let i = 0; i < n % 4; i++) m = rotate(m)
+    if (n > 3) return flip(m)
+    return m
+  }
+
+  const peal = (m: string[][]) => m
+    .filter((v, i) => i !== 0 && i !== m.length - 1)
+    .map(r => r.filter((c, i) => i !== 0 && i !== r.length - 1))
+
+  const checkLeft = (left: string[][], right: string[][]) => {
+    if (left === undefined) return true
+    for (let i = 0; i < left.length; i++)
+      if (left[i][left[i].length - 1] !== right[i][0]) return false
+    return true
+  }
+
+  const checkTop = (top: string[][], bottom: string[][]) => {
+    if (top === undefined) return true
+    for (let i = 0; i < top[top.length - 1].length; i++)
+      if (top[top.length - 1][i] !== bottom[0][i]) return false
+    return true
+  }
+
+  const fits = (filled: { idx: number, rot: number }[][], row: number, column: number, idx: number, rot: number) => {
+    const top = filled[row - 1] === undefined ? undefined : rotateN(tiles[filled[row - 1][column].idx].data, filled[row - 1][column].rot)
+    const left = filled[row][column - 1] === undefined ? undefined : rotateN(tiles[filled[row][column - 1].idx].data, filled[row][column - 1].rot)
+    const tile = rotateN(tiles[idx].data, rot)
+
+    return checkLeft(left, tile) && checkTop(top, tile)
+  }
+
+  const construct = (used: Set<number>, row: number, column: number, filled: { idx: number, rot: number }[][]) => {
+    if (image.length !== 0) return
+
+    if (column === size) { column = 0; row++}
+    if (row === size) {
+      const map: string[][] = []
+      const parts = filled.map(r => r.map(c => peal(rotateN(tiles[c.idx].data, c.rot))))
+      const bsize = parts[0][0][0].length
+
+      for (const line of parts) {
+        for (let r = 0; r < bsize; r++) {
+          map.push([])
+          for (let c1 = 0; c1 < size; c1++)
+            for (let c2 = 0; c2 < bsize; c2++)
+              map[map.length - 1].push(line[c1][r][c2])
+        }
+      }
+
+      image = map
+    }
+
+    for (const idx of tiles.keys()) {
+      if (!used.has(idx)) {
+        used.add(idx)
+
+        for (let rot = 0; rot < 8; rot++) {
+          if (fits(filled, row, column, idx, rot)) {
+            filled[row][column] = { idx, rot }
+            construct(used, row, column + 1, filled)
+          }
+        }
+
+        used.delete(idx)
+        filled[row][column] = undefined
+      }
+    }
+  }
+
+  const empty = []
+  for (let i = 0; i < size; i++) {
+    empty[i] = []
+      for (let j = 0; j < size; j++) empty[i][j] = undefined
+  }
+
+  const search = (pattern: string[][], image: string[][]) => {
+    const monsterHeight = pattern.length
+    const monsterWidth = pattern[0].length
+
+    const test = (r: number, c: number) => {
+      for (let rm = 0; rm < monsterHeight; rm++)
+        for (let cm = 0; cm < monsterWidth; cm++)
+          if (pattern[rm][cm] === '#' && image[r + rm][c + cm] !== pattern[rm][cm]) return false
+      return true
+    }
+
+    let count = 0
+    for (let r = 0; r < image.length - monsterHeight; r++)
+      for (let c = 0; c < image[0].length - monsterWidth; c++)
+        if (test(r, c)) count++
+
+    return count
+  }
+
+  construct(new Set(), 0, 0, empty)
+
+  const monster = ['                  # '.split(''),
+                   '#    ##    ##    ###'.split(''),
+                   ' #  #  #  #  #  #   '.split('')]
+
+  let best = 0
+  for (let r = 0; r < 8; r++) {
+    const found = search(monster, rotateN(image, r))
+    if (found > best) best = found
+  }
+
+  console.log(
+    image.reduce((c1, l) => c1 += l.reduce((c2, p) => c2 += p === '#' ? 1 : 0, 0), 0) -
+    best * monster.reduce((c1, l) => c1 += l.reduce((c2, p) => c2 += p === '#' ? 1 : 0, 0), 0)
   )
 }
