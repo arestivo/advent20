@@ -4,6 +4,7 @@ import HGCv8 from "./hgcv8"
 import { callbackify } from "util"
 import { userInfo } from "os"
 import { create } from "domain"
+import { parse } from "path"
 
 export const runProblem = (problem: string) => {
   let f: () => void
@@ -971,4 +972,317 @@ export const p20b = () => {
     image.reduce((c1, l) => c1 += l.reduce((c2, p) => c2 += p === '#' ? 1 : 0, 0), 0) -
     best * monster.reduce((c1, l) => c1 += l.reduce((c2, p) => c2 += p === '#' ? 1 : 0, 0), 0)
   )
+}
+
+export const p21a = () => {
+  const foods = io.readLines('21.in')
+
+  const aMap = new Map<string, Set<string>>()
+  const ingredients = []
+  const maybe = new Set<string>()
+
+  for (const [i, a] of foods.map(f => f.split('(contains '))) {
+    const is = i.trim().split(' ')
+    const as = a.slice(0, a.length - 1).split(', ')
+
+    ingredients.push(...is)
+
+    for (const allergen of as) {
+      if (!aMap.has(allergen)) aMap.set(allergen, new Set(is))
+      else aMap.set(allergen, new Set([...aMap.get(allergen)].filter(aa => new Set(is).has(aa))))
+    }
+  }
+
+  aMap.forEach(a => [...a].forEach(a => maybe.add(a)))
+  const noAllergens = ingredients.filter(i => !maybe.has(i))
+  console.log(noAllergens.length)
+}
+
+export const p21b = () => {
+  const foods = io.readLines('21.in')
+
+  const aMap = new Map<string, Set<string>>()
+  const ingredients = []
+  const maybe = new Set<string>()
+
+  for (const [i, a] of foods.map(f => f.split('(contains '))) {
+    const is = i.trim().split(' ')
+    const as = a.slice(0, a.length - 1).split(', ')
+
+    ingredients.push(...is)
+
+    for (const allergen of as) {
+      if (!aMap.has(allergen)) aMap.set(allergen, new Set(is))
+      else aMap.set(allergen, new Set([...aMap.get(allergen)].filter(aa => new Set(is).has(aa))))
+    }
+  }
+
+  const allergens = new Map<string, string>()
+  while(aMap.size > 0) {
+    for (const a of aMap.keys()) {
+      if (aMap.get(a).size === 1) {
+        const found = aMap.get(a).values().next().value
+        allergens.set(a, found)
+        aMap.delete(a)
+        for (const [i, b] of aMap) {
+          aMap.set(i, new Set([...b].filter(c => c !== found)))
+        }
+      }
+    }
+  }
+
+  const ordered = [...allergens.keys()].sort()
+  const output = []
+  ordered.forEach(o => output.push(allergens.get(o)))
+  console.log(output.join())
+
+}
+
+export const p22a = () => {
+  const [decka, deckb] = io.readChunks('22.in').map(d => d.splice(1).map(c => parseInt(c, 10)))
+
+  while (decka.length > 0 && deckb.length > 0) {
+    const carda = decka.shift()
+    const cardb = deckb.shift()
+
+    carda > cardb ? decka.push(carda, cardb) : deckb.push(cardb, carda)
+  }
+
+  const winner = decka.length === 0 ? deckb : decka
+  console.log(winner.reduce((s, c, i) => s += c * (winner.length - i), 0))
+}
+
+export const p22b = () => {
+  const [decka, deckb] = io.readChunks('22.in').map(d => d.splice(1).map(c => parseInt(c, 10)))
+
+  const stringify = (da, db) => `${da.join()}-${da.join()}`
+
+  const combat = (da, db, rec = false) => {
+    const mem = new Set()
+    mem.add(stringify(da, db))
+
+    while (da.length > 0 && db.length > 0) {
+      const ca = da.shift()
+      const cb = db.shift()
+
+      if (ca <= da.length && cb <= db.length)
+        combat([...da].slice(0, ca), [...db].slice(0, cb), true) ? da.push(ca, cb) : db.push(cb, ca)
+      else ca > cb ? da.push(ca, cb) : db.push(cb, ca)
+
+      if (mem.has(stringify(da, db))) return true
+      mem.add(stringify(da, db))
+    }
+
+    if (rec) return da.length > 0
+    else {
+      const winner = decka.length === 0 ? deckb : decka
+      console.log(winner.reduce((s, c, i) => s += c * (winner.length - i), 0))  
+    }
+  }
+
+  combat(decka, deckb)
+}
+
+export const p23a = () => {
+  const cups = io.readLines('23.in')[0].split('')
+
+  let cc = cups[0]
+
+  const pick = (current: string) => {
+    const idx = cups.indexOf(current)
+    const picked: string[] = []
+    for (let i = idx + 1; i <= idx + 3; i++) picked.push(cups[i % cups.length])
+    picked.forEach(p => cups.splice(cups.indexOf(p), 1))
+    return picked
+  }
+
+  const destination = (current: string) => {
+    let d = parseInt(current, 10) - 1
+
+    const min = Math.min(...cups.map(c => parseInt(c, 10)))
+    const max = Math.max(...cups.map(c => parseInt(c, 10)))
+    while (cups.indexOf(d.toString()) === -1) if (--d < min) d = max
+    return d.toString()
+  }
+
+
+  for (let move = 0; move < 100; move++) {
+    const p = pick(cc)
+    const d = destination(cc)
+    cups.splice(cups.indexOf(d) + 1, 0, ...p)
+    cc = cups[(cups.indexOf(cc) + 1) % cups.length]
+  }
+
+  const result = []
+  for (let i = 1; i < cups.length; i++)
+    result.push(cups[(cups.indexOf('1') + i) % cups.length])
+  console.log(result.join(''))
+}
+
+export const p23b = () => {
+  const cups = io.readLines('23.in')[0].split('').map(c => parseInt(c, 10))
+
+  const list: { label: number, next: number }[] = []
+  const find = new Map<number, number>()
+
+  const min = 1
+  const max = 1000000
+
+  // Extract part of the list
+  const extract = (start: number, count: number) => {
+    const e = []
+    while (count-- > 0) {
+      e.push(list[start].label)
+      start = list[start].next % list.length
+    }
+    return e
+  }
+
+  // Extra cups
+  for (let e = 10; e <= max; e++) cups.push(e)
+
+  cups.forEach((c, i) => {
+    const node = { label: c, next: (i + 1) % max }
+    list.push(node)
+    find.set(c, i)
+  })
+
+  let current = 0
+
+  for (let move = 0; move < 10000000; move++) {
+    const fp = list[current].next
+    const lp = list[list[list[current].next].next].next
+
+    let d = list[current].label - 1
+    if (d < min) d = max
+
+    const picked = new Set(extract(fp, 3))
+    while (picked.has(d)) if (--d < min) d = max
+
+    const dest = find.get(d)
+
+    list[current].next = list[lp].next
+    list[lp].next = list[dest].next
+    list[dest].next = fp
+
+
+    current = list[current].next
+  }
+
+  const n1 = list[find.get(1)].next
+  const n2 = list[n1].next
+
+  console.log(list[n1].label * list[n2].label)
+}
+
+export const p24a = () => {
+  const stepList = io.readLines('24.in')
+  const tiles = new Set()
+
+  for (const steps of stepList) {
+    let r = 0
+    let c = 0
+    let cs = 0
+
+    while (cs < steps.length) {
+      if (steps[cs] === 'e') c++
+      else if (steps[cs] === 'w') c--
+      else if (steps.slice(cs, cs + 2) === 'nw') {c -= (r % 2 === 0 ? 1 : 0) ; r-- ; cs++ }
+      else if (steps.slice(cs, cs + 2) === 'sw') {c -= (r % 2 === 0 ? 1 : 0) ; r++ ; cs++ }
+      else if (steps.slice(cs, cs + 2) === 'ne') {c += (r % 2 !== 0 ? 1 : 0) ; r-- ; cs++ }
+      else if (steps.slice(cs, cs + 2) === 'se') {c += (r % 2 !== 0 ? 1 : 0) ; r++ ; cs++ }
+      cs++
+    }
+
+    const landed = `${r},${c}`
+    if (tiles.has(landed)) tiles.delete(landed)
+    else tiles.add(landed)
+  }
+
+  console.log(tiles.size)
+}
+
+export const p24b = () => {
+  const stepList = io.readLines('24.in')
+  const tiles: Set<string> = new Set()
+
+  const move = (pos: number[], step: string) => {
+    switch(step) {
+      case 'e': return [pos[0], pos[1] + 1]
+      case 'w': return [pos[0], pos[1] - 1]
+      case 'nw': return [pos[0] - 1, pos[1] - (pos[0] % 2 === 0 ? 1 : 0)]
+      case 'sw': return [pos[0] + 1, pos[1] - (pos[0] % 2 === 0 ? 1 : 0)]
+      case 'ne': return [pos[0] - 1, pos[1] + (pos[0] % 2 !== 0 ? 1 : 0)]
+      case 'se': return [pos[0] + 1, pos[1] + (pos[0] % 2 !== 0 ? 1 : 0)]
+    }
+  }
+
+  const neighbours = (pos: number[]) => ['e', 'w', 'ne', 'nw', 'se', 'sw'].map(d => move(pos, d))
+
+  for (const steps of stepList) {
+    let pos = [0, 0]
+    let cs = 0
+
+    while (cs < steps.length) {
+      if (steps[cs] === 'e' || steps[cs] === 'w') { pos = move(pos, steps[cs]); cs++ }
+      else { pos = move(pos, steps.slice(cs, cs + 2)); cs += 2 }
+    }
+
+    if (tiles.has(pos.join())) tiles.delete(pos.join())
+    else tiles.add(pos.join())
+  }
+
+  for (let day = 0; day < 100; day++) {
+    const toAdd = []
+    const toRemove = []
+
+    const blacks = [...tiles].map(t => t.split(',').map(c => parseInt(c, 10)))
+    const minR = Math.min(...blacks.map(t => t[0])) - 1
+    const maxR = Math.max(...blacks.map(t => t[0])) + 1
+    const minC = Math.min(...blacks.map(t => t[1])) - 1
+    const maxC = Math.max(...blacks.map(t => t[1])) + 1
+
+    for (let r = minR; r <= maxR; r++)
+      for (let c = minC; c <= maxC; c++) {
+        const count = neighbours([r, c]).filter(n => tiles.has(n.join())).length
+        if (tiles.has([r, c].join()) && (count === 0 || count > 2)) toRemove.push([r, c].join())
+        if (!tiles.has([r, c].join()) && count === 2) toAdd.push([r, c].join())
+      }
+
+    toAdd.forEach(t => tiles.add(t))
+    toRemove.forEach(t => tiles.delete(t))
+ }
+
+  console.log(tiles.size)
+}
+
+export const p25a = () => {
+  const [cardKey, doorKey] = io.readIntegers('25.in')
+
+  const transform = (subject: number, loop: number) => {
+    let value = 1
+    for (let i = 0; i < loop; i++) {
+      value = value * subject
+      value = value % 20201227
+    }
+    return value
+  }
+
+  const findLoop = (subject: number, objective: number) => {
+    let value = 1
+    let loop = 0
+    while (value !== objective) {
+      value = value * subject
+      value = value % 20201227
+      loop++
+    }
+    return loop
+  }
+
+
+  // let cardLoop = findLoop(7, cardKey)
+  // console.log(transform(doorKey, cardLoop))
+
+  let doorLoop = findLoop(7, doorKey)
+  console.log(transform(cardKey, doorLoop))
 }
